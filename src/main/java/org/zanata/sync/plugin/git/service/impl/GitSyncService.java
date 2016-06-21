@@ -91,6 +91,8 @@ public class GitSyncService implements RepoSyncService {
             Git git = Git.open(destPath);
             List<Ref> refs = git.branchList().setListMode(
                     ListBranchCommand.ListMode.ALL).call();
+            Optional<Ref> remoteMaster = refs.stream().filter(ref -> ref.getName()
+                    .equals("refs/remotes/origin/master")).findFirst();
             /* refs will have name like these:
             refs/heads/master
             refs/remotes/origin/master
@@ -108,11 +110,9 @@ public class GitSyncService implements RepoSyncService {
                 }
             }
 
-            if ("master".equals(branch)) {
-                log.debug("merging origin/master");
-                git.checkout().setName("master").call();
-                git.merge().setFastForward(MergeCommand.FastForwardMode.FF_ONLY)
-                        .include(remoteBranchRef.get()).call();
+            // if remote branch head is the asking branch, we don't need to do any thing
+            if (localBranchRef.isPresent()) {
+                log.debug("already on branch: {}", branch);
                 return;
             }
 
@@ -120,22 +120,23 @@ public class GitSyncService implements RepoSyncService {
              * If branch found in local, use it.
              * If branch does not exists in remote, create new local branch based on master branch.
              */
-            if (!localBranchRef.isPresent() && remoteBranchRef.isPresent()) {
-                git.branchCreate()
+            if (remoteBranchRef.isPresent()) {
+                git.checkout()
+                        .setCreateBranch(true)
                         .setForce(true).setName(branch)
                         .setStartPoint("origin/" + branch)
                         .setUpstreamMode(
-                        CreateBranchCommand.SetupUpstreamMode.SET_UPSTREAM)
+                        CreateBranchCommand.SetupUpstreamMode.TRACK)
                         .call();
-            } else if (!localBranchRef.isPresent()) {
-                git.branchCreate()
-                    .setForce(true).setName(branch)
-                    .setStartPoint("origin/master")
-                    .setUpstreamMode(
-                        CreateBranchCommand.SetupUpstreamMode.SET_UPSTREAM)
-                    .call();
+            } else {
+                git.checkout()
+                        .setCreateBranch(true)
+                        .setForce(true).setName(branch)
+                        .setStartPoint("origin/master")
+                        .setUpstreamMode(
+                                CreateBranchCommand.SetupUpstreamMode.TRACK)
+                        .call();
             }
-            git.checkout().setName(branch).call();
             if (log.isDebugEnabled()) {
                 log.debug("current branch is: {}", git.getRepository().getBranch());
             }

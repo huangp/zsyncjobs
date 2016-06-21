@@ -46,10 +46,10 @@ public enum JobDetailEntry {
      * @return any keys that is not part of this enum
      */
     public static List<String> unknownEntries(Map<String, String> jobDetail) {
-        return ImmutableMap.copyOf(jobDetail).keySet().stream()
+        List<String> result = jobDetail.keySet().stream()
                 .filter(key -> !validKeys.contains(key)).collect(
                         Collectors.toList());
-
+        return ImmutableList.copyOf(result);
     }
 
 

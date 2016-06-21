@@ -31,6 +31,7 @@ public class GitSyncServiceTest {
 
     @Before
     public void setUp() throws Exception {
+        // TODO set up a repo on local file system and use it as a remote to test
         String username = JunitAssumptions.assumeGitUsernameExists();
         String password = JunitAssumptions.assumeGitPasswordExists();
 //        String username = "";
